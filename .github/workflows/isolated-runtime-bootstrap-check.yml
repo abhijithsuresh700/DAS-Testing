@@ -1,0 +1,42 @@
+name: Guarded Windows bootstrap static validation
+
+on:
+  push:
+    branches:
+      - setup/isolated-das-runtime-bootstrap
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse Windows bootstrap PowerShell without executing it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          $ast = [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts/prepare-isolated-das.ps1'), [ref]$tokens, [ref]$errors)
+          if ($null -eq $ast -or $errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.ToString() }
+            exit 1
+          }
+          Write-Host 'Bootstrap script parses correctly. No Docker/database commands executed.'
+      - name: Confirm synthetic application baseline
+        run: |
+          npm test
+          npm run build
+      - name: Confirm guardrails remain present
+        shell: pwsh
+        run: |
+          $script = Get-Content scripts/prepare-isolated-das.ps1 -Raw
+          foreach ($required in @('127.0.0.1:', 'docker', 'DAS_DATABASE_URL', 'project', 'doctor', 'Refusing', 'git')) {
+            if (-not $script.Contains($required)) { throw "Missing setup guardrail: $required" }
+          }
