@@ -1,0 +1,38 @@
+project:
+  name: das-testing
+  instructions: |
+    This is an isolated, disposable test fixture for DAS Milestone 7 only.
+    Implement only the approved slug-normalization task in src/slug.js and tests/slug.test.js.
+    Keep the dependency-free Node.js setup. No network calls, credentials, external services,
+    production remotes, unrelated repos, deployment, or database modifications.
+    Do not bypass acceptance review or change project approval controls.
+
+commands:
+  setup: []
+  test:
+    - node --test
+  taskTest:
+    - node --test
+  build:
+    - node --check src/slug.js
+  postRelease:
+    - node --test
+
+acceptance:
+  commands:
+    - node --test
+  timeoutMinutes: 5
+
+protectedPaths:
+  - .das/
+  - .github/
+  - .env
+  - .env.*
+  - .git/
+  - .das-runtime/
+
+allowedProviders:
+  - claude-subscription
+  - codex-subscription
+
+defaultExecutionBackend: HOST
